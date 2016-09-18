@@ -305,9 +305,9 @@ public class GooglePlus extends CordovaPlugin implements GoogleApiClient.OnConne
                 Log.i(TAG, "trying to get account information");
                 String accessToken = "";
                 try {
-                 GoogleAuthUtil.getToken(cordova.getActivity(), acct.getEmail(), "oauth2:https://www.googleapis.com/auth/plus.me");
+                    GoogleAuthUtil.getToken(cordova.getActivity().getApplicationContext(), acct.getEmail(), "oauth2:profile email");
                 } catch (Exception e) {
-
+                    Log.e(TAG, "getToken Error: " + e.toString());
                 }
                 result.put("email", acct.getEmail());
                 result.put("accessToken", accessToken);
