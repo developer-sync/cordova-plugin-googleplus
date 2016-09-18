@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.util.Log;
 
 import com.google.android.gms.auth.api.Auth;
+import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.api.signin.GoogleSignInResult;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -18,6 +19,7 @@ import com.google.android.gms.common.api.Scope;
 import org.apache.cordova.*;
 import org.json.JSONException;
 import org.json.JSONObject;
+import java.io.IOException;
 
 import java.security.MessageDigest;
 import android.content.pm.Signature;
@@ -301,8 +303,14 @@ public class GooglePlus extends CordovaPlugin implements GoogleApiClient.OnConne
 
             try {
                 Log.i(TAG, "trying to get account information");
+                String accessToken = "";
+                try {
+                 GoogleAuthUtil.getToken(cordova.getActivity(), acct.getEmail(), "oauth2:https://www.googleapis.com/auth/plus.me");
+                } catch (Exception e) {
 
+                }
                 result.put("email", acct.getEmail());
+                result.put("accessToken", accessToken);
 
                 //only gets included if requested (See Line 164).
                 result.put("idToken", acct.getIdToken());
