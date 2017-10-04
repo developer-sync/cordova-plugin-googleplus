@@ -5,6 +5,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
 
+import com.google.android.gms.auth.UserRecoverableAuthException;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.auth.api.signin.GoogleSignInResult;
@@ -45,7 +46,7 @@ public class GooglePlus extends CordovaPlugin implements GoogleApiClient.OnConne
     public static final String ARGUMENT_OFFLINE_KEY = "offline";
 
     public static final String TAG = "GooglePlugin";
-    public static final int RC_GOOGLEPLUS = 77552; // Request Code to identify our plugin's activities
+    public static final int RC_GOOGLEPLUS = 1001; // Request Code to identify our plugin's activities
     private String lastAccessToken = null;
 
     // Wraps our service connection to Google Play services and provides access to the users sign in state and Google APIs
@@ -175,11 +176,13 @@ public class GooglePlus extends CordovaPlugin implements GoogleApiClient.OnConne
      * Tries to log the user in silently using existing sign in result information
      */
     private void trySilentLogin() {
-        ConnectionResult apiConnect =  mGoogleApiClient.blockingConnect();
-
-        if (apiConnect.isSuccess()) {
-            handleSignInResult(Auth.GoogleSignInApi.silentSignIn(this.mGoogleApiClient).await());
-        }
+        cordova.getThreadPool().execute(() -> {
+            ConnectionResult apiConnect =  mGoogleApiClient.blockingConnect();
+            
+            if (apiConnect.isSuccess()) {
+                handleSignInResult(Auth.GoogleSignInApi.silentSignIn(this.mGoogleApiClient).await());
+            }
+        });
     }
 
     /**
@@ -300,7 +303,7 @@ public class GooglePlus extends CordovaPlugin implements GoogleApiClient.OnConne
             //Return the status code to be handled client side
             savedCallbackContext.error(signInResult.getStatus().getStatusCode());
         } else {
-            
+            final GooglePlus plugin = this;
             AsyncTask<Void, Void, String> task = new AsyncTask<Void, Void, String>() {
                 @Override
                 protected String doInBackground(Void... params) {
@@ -319,6 +322,10 @@ public class GooglePlus extends CordovaPlugin implements GoogleApiClient.OnConne
                             accessToken = GoogleAuthUtil.getToken(context, acct.getEmail(), "oauth2:profile email");
                         } catch (Exception e) {
                             Log.e(TAG, "getToken Error: " + e.toString());
+                            if (e instanceof UserRecoverableAuthException) {
+                                cordova.startActivityForResult(plugin, ((UserRecoverableAuthException) e).getIntent(), RC_GOOGLEPLUS);
+                                return null;
+                            }
                         }
 
                         if (accessToken != null) {
